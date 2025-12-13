@@ -1,0 +1,8 @@
+# Sécurité (Ne jamais partager les mots de passe)
+.env
+.env.txt
+
+# Environnement virtuel et Python
+venv/
+__pycache__/
+*.pyc
