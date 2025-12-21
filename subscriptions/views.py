@@ -1,20 +1,77 @@
-from rest_framework import permissions,viewsets
-from models import Subscription,Payment
-from serializers import SubscribtionSerializer, PaymentSerializer
+from rest_framework import viewsets
+from .models import Subscription, Category, Payment, Notification, PriceHistory
+from .serializers import SubscriptionSerializer, CategorySerializer, PaymentSerializer, NotificationSerializer, PriceHistorySerializer
+from .services import generate_payments
+from rest_framework import permissions
 
-class SubscribtionViewSet(viewsets.ModelViewSet):
-    serializers_class = SubscribtionSerializer
-    permissions_class = [permissions.IsAuthenticated]
+
+# 1. ABONNEMENTS (Déjà en CRUD complet)
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Subscription.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # On sauvegarde et on lance le calcul
+        subscription = serializer.save(user=self.request.user)
+        generate_payments(subscription)
 
-class PayementViewSet(viewsets.ModelViewSet):
-    serializers_class = PaymentSerializer
+    def perform_update(self, serializer):
+        sub = serializer.save()
+        # On supprime les futurs paiements non payés pour les régénérer proprement
+        sub.payments.filter(is_paid=False).delete()
+        generate_payments(sub)
+
+    # Le ViewSet pour l'historique des prix
+class PriceHistoryViewSet(viewsets.ModelViewSet):
+    serializer_class = PriceHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PriceHistory.objects.all()
+
+
+# 2. CATÉGORIES (Déjà en CRUD complet)
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+# 3. PAIEMENTS (C'était ReadOnly, maintenant c'est CRUD complet)
+class PaymentViewSet(viewsets.ModelViewSet):  # <--- CHANGÉ ICI
+    serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Payment.objects.filter(user=self.request.user)
+        return Payment.objects.filter(subscription__user=self.request.user).order_by('-date')
+
+    # Optionnel : Si on crée un paiement manuellement, on l'associe à l'utilisateur via l'abonnement
+    # Mais DRF gère ça assez bien si on envoie l'ID de l'abonnement.
+
+
+# 4. NOTIFICATIONS (C'était ReadOnly, maintenant c'est CRUD complet)
+class NotificationViewSet(viewsets.ModelViewSet):  # <--- CHANGÉ ICI
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+
+from rest_framework import generics, permissions
+from django.contrib.auth.models import User
+from .serializers import RegisterSerializer, UserSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [permissions.AllowAny] # Important : pas besoin d'être connecté
+    serializer_class = RegisterSerializer
+
+class CurrentUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
