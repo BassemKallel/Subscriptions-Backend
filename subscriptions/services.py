@@ -62,7 +62,6 @@ def generate_payments(subscription):
     while not future_payment_created:
         is_past = current_cycle_date <= today
 
-        # Gestion du prix avec historique
         amount_to_pay = subscription.price
         history = subscription.price_history.filter(apply_until__gte=current_cycle_date).order_by('apply_until').first()
         if history:
@@ -80,7 +79,6 @@ def generate_payments(subscription):
         )
 
         if not is_past:
-            # C'est le prochain paiement !
             subscription.next_payment_date = current_cycle_date
             subscription.save()
             future_payment_created = True

@@ -9,9 +9,10 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PaymentSerializer(serializers.ModelSerializer):
+    subscription_name = serializers.CharField(source='subscription.name', read_only=True)
     class Meta:
         model = Payment
-        fields = ['id', 'date', 'amount', 'is_paid', 'note', 'is_historical']
+        fields = ['id', 'date', 'amount', 'is_paid', 'note', 'is_historical','subscription','subscription_name']
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,7 +34,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'next_payment_date')
 
     def create(self, validated_data):
-        # On associe l'utilisateur connecté
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
 

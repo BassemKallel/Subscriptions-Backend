@@ -25,8 +25,9 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-dev-key')
 # Lit la valeur dans le .env (True ou False). Par défaut False pour sécurité.
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.ngrok-free.dev']
 
+CSRF_TRUSTED_ORIGINS = ['https://pseudoisometric-gentlest-margy.ngrok-free.dev']
 
 # --- APPLICATIONS ---
 
@@ -47,7 +48,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # Doit être tout en haut
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -79,7 +80,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # --- BASE DE DONNÉES ---
 
-# Configuration automatique via DATABASE_URL du .env
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL'),
@@ -110,12 +110,10 @@ USE_I18N = True
 USE_TZ = True
 
 
-# --- FICHIERS STATIQUES ---
 
 STATIC_URL = 'static/'
 
 
-# --- CONFIGURATION API (DRF) ---
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -142,3 +140,15 @@ SIMPLE_JWT = {
 # --- CONFIGURATION CORS ---
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'ngrok-skip-browser-warning',
+]

@@ -1,3 +1,4 @@
+from rest_framework.decorators import action
 from rest_framework import viewsets
 from .models import Subscription, Category, Payment, Notification, PriceHistory
 from .serializers import SubscriptionSerializer, CategorySerializer, PaymentSerializer, NotificationSerializer, PriceHistorySerializer
@@ -20,9 +21,22 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         sub = serializer.save()
-        # On supprime les futurs paiements non payés pour les régénérer proprement
         sub.payments.filter(is_paid=False).delete()
         generate_payments(sub)
+
+    @action(detail=True , methods=['post'])
+    def pause(self,request):
+        subscription =self.get_object()
+        subscription.status = 'paused'
+        subscription.save()
+        return Response({'message':'Abonnement suspendu'})
+
+    @action(detail=True, methods=['post'])
+    def resume(self, request):
+        subscription = self.get_object()
+        subscription.status = 'active'
+        subscription.save()
+        return Response({'status': 'active', 'message': 'Abonnement réactivé.'})
 
     # Le ViewSet pour l'historique des prix
 class PriceHistoryViewSet(viewsets.ModelViewSet):
@@ -31,14 +45,12 @@ class PriceHistoryViewSet(viewsets.ModelViewSet):
     queryset = PriceHistory.objects.all()
 
 
-# 2. CATÉGORIES (Déjà en CRUD complet)
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
-# 3. PAIEMENTS (C'était ReadOnly, maintenant c'est CRUD complet)
 class PaymentViewSet(viewsets.ModelViewSet):  # <--- CHANGÉ ICI
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -50,7 +62,6 @@ class PaymentViewSet(viewsets.ModelViewSet):  # <--- CHANGÉ ICI
     # Mais DRF gère ça assez bien si on envoie l'ID de l'abonnement.
 
 
-# 4. NOTIFICATIONS (C'était ReadOnly, maintenant c'est CRUD complet)
 class NotificationViewSet(viewsets.ModelViewSet):  # <--- CHANGÉ ICI
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]

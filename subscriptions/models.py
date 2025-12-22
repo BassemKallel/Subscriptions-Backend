@@ -20,9 +20,9 @@ class Subscription(models.Model):
         ('years', 'Années'),
     ]
     STATUS_CHOICES = [
-        ('active', 'Actif'),
-        ('cancelled', 'Annulé'),
-        ('expired', 'Expiré'),
+        ('active', 'Active'),
+        ('paused', 'Paused'),
+        ('cancelled', 'Cancelled'),
     ]
     CURRENCY_CHOICES = [
         ('USD', 'US Dollar'),
@@ -34,8 +34,6 @@ class Subscription(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name='subscriptions')
     name = models.CharField(max_length=100)
-
-    # Correction: 'price' au lieu de 'cost'
     price = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='TND')
 
@@ -43,7 +41,6 @@ class Subscription(models.Model):
     duration_interval = models.PositiveIntegerField(default=1)
 
     start_date = models.DateField(default=timezone.now)
-    # Correction typo: next_payment_date (sans 'e' après pay)
     next_payment_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
 
